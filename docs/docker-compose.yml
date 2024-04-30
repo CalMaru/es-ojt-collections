@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  es-ojt-docs:
+    image: docker.io/library/node:18.0.0-bullseye
+    ports:
+      - 3000:3000
+    volumes:
+      - ./build:/home/libs/build
+      - ./entrypoint.sh:/home/libs/entrypoint.sh
+    command:
+      - /home/libs/entrypoint.sh
