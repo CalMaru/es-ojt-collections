@@ -9,8 +9,9 @@
 </picture>
 <br><br>
 <div align="left">
-
 This documentation is build with [Docusaurus](https://docusaurus.io/)
+
+![](./images/docs.PNG)
 
 ## Requirements
 - npm version: `18.0.0`
