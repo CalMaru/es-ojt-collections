@@ -17,6 +17,7 @@
 | Repositories                                                 | Summary                                                      | ETC                          |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ---------------------------- |
 | [es-ojt-collections](https://github.com/CalMaru/es-ojt-collections) | - es-ojt 관련 레포지토리 모음<br />- es-ojt 개발 문서 페이지 관리 |                              |
+| [es-ojt-elasticsearch](https://github.com/CalMaru/es-ojt-elasticsearch) | - Elasticsearch 컨테이너 관리<br />- Index 설정, bulk data 적재를 위한 bash 파일 관리<br />- Elasticsearch API를 개발하기 위한 Postman collection 관리 |                              |
 | [es-ojt-data](https://github.com/CalMaru/es-ojt-data)        | - Kafka를 이용한 뉴스 데이터 전처리 수행<br />- Elasticsearch에 뉴스 데이터 적재<br />- API를 이용한 Elasticsearch 인덱스, 데이터 관리 | - Kafka / API 개발 계획 없음 |
 | [es-ojt-api](https://github.com/CalMaru/es-ojt-api)          | 뉴스 검색 백엔드 API                                         |                              |
 
