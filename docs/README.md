@@ -19,7 +19,11 @@ This documentation is build with [Docusaurus](https://docusaurus.io/)
 
 ## Getting Started - local
 1. Set your npm version to `18.0.0`
-2. run server
+2. npm 패키지 설치
+   ```bash
+   npm install
+   ```
+3. run server
 
    ```bash
    npm run start
