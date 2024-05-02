@@ -98,6 +98,10 @@ const config = {
                 label: "API",
                 to: "/docs/intro",
               },
+              {
+                label: "Blog",
+                href: "/blog/first-blog-post",
+              },
             ],
           },
           {
