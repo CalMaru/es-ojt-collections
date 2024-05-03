@@ -7,21 +7,108 @@ slug: /client-api/@docusaurus/get-option-api
 
 import APITable from "@site/src/components/APITable";
 
-뉴스 검색 옵션에 노출되는 `뉴스 분류`, `언론사` 정보를 반환하는 API입니다.
+뉴스 검색 옵션에 노출되는 `분류`, `언론사` 정보를 반환하는 API입니다.
 
 ## 기본 정보 {#request-code-info}
 
+```mdx-code-block
+<APITable>
+```
+
 | 메서드 | URL            |
 | ------ | -------------- |
-| GET    | /search/option |
+| GET    | `/search/option` |
+
+```mdx-code-block
+</APITable>
+```
 
 ## 응답 {#response}
 
+```mdx-code-block
+<APITable>
+```
+
 | Field             | Type              | Description      |
 | ----------------- | ----------------- | ---------------- |
-| categories        | list (`Category`) | 뉴스 분류 리스트 |
-| categories.key    | String            | 분류 기준        |
-| categories.values | list (String)     | 분류 리스트      |
-| providers         | list (`Provider`) | 언론사 리스트    |
-| providers.key     | String            | 언론사 분류 기준 |
-| providers.values  | list (String)     | 언론사 리스트    |
+| categories        | List (`Category`) | 뉴스 분류 리스트 |
+| categories.all    | String            | 분류 기준 - 전체        |
+| categories.category | List (String)     | 분류 기준 - 유형별 분류      |
+| categories.detail | Dict (list(String))     | 분류 기준 - 유형별 상세 분류      |
+| providers         | List (`Provider`) | 언론사 리스트    |
+| providers.all     | String            | 언론사 - 전체 |
+| providers.category  | List (String)     | 언론사 - 유형별    |
+| providers.detail  | Dict (list(String))     | 언론사 - 언론사 분류순    |
+| providers.local  | Dict (list(String))     | 언론사 - 지역별 언론사    |
+
+```mdx-code-block
+</APITable>
+```
+
+### 응답 예시 {#response-example}
+```json
+{
+  "categories": {
+    "all": "전체",
+    "category": [
+      "IT_과학",
+      "경제",
+      "국제"
+    ],
+    "detail": {
+      "IT_과학": [
+        "IT_과학일반",
+        "과학",
+        "모바일"
+      ],
+      "경제": [
+        "경제일반",
+        "국제경제",
+        "금융_재테크"
+      ],
+      "국제": [
+        "국제일반",
+        "러시아",
+        "미국_북미"
+      ]
+    }
+  },
+  "providers": {
+    "all": "전체",
+    "category": [
+      "경제/IT",
+      "방송/통신",
+      "일간지",
+      "지역지"
+    ],
+    "detail": {
+      "경제/IT": [
+        "디지털타임스",
+        "머니투데이"
+      ],
+      "일간지": [
+        "경향신문",
+        "광주일보"
+      ],
+      "지역지": [
+        "강원도민일보",
+        "강원일보"
+      ],
+      "방송/통신": [
+        "KBS",
+        "MBC"
+      ]
+    },
+    "local": {
+      "강원": [
+        "강원도민일보",
+        "강원일보"
+      ],
+      "경기": [
+        "OBS",
+        "경기일보"
+      ]
+    }
+  }
+}
+```
