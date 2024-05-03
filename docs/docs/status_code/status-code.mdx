@@ -1,0 +1,55 @@
+---
+sidebar_position: 2
+slug: /status-code/@docusaurus/status-code
+---
+
+import APITable from "@site/src/components/APITable";
+
+# Status Code
+
+이 페이지에서는 ES-OJT API에서 반환되는 에러 상태 코드 정보를 제공합니다.
+
+## Bad Request {#bad-request}
+
+```mdx-code-block
+<APITable>
+```
+
+| Code | Details|
+| --- | --- |
+|`C21001`|Bad Request - **start_date** precedes system's start date|
+|`C21002`|Bad Request - **end_date** has passed the system's end date|
+|`C21003`|Bad Request - invalid **category_type**|
+|`C21004`|Bad Request - invalid **provider_type**|
+
+```mdx-code-block
+</APITable>
+```
+
+## System Error {#system-error}
+
+```mdx-code-block
+<APITable>
+```
+
+| Code | Details|
+| --- | --- |
+|`C50000`|System Error|
+
+```mdx-code-block
+</APITable>
+```
+
+## Elasticsearch Error {#elasticsearch-error}
+
+```mdx-code-block
+<APITable>
+```
+
+| Code | Details|
+| --- | --- |
+|`C50001`|Elasticsearch Error|
+
+```mdx-code-block
+</APITable>
+```
