@@ -4,3 +4,328 @@ title: 9. News Search API
 authors: [cal]
 tags: [elasticsearch, news, API]
 ---
+
+import APITable from "@site/src/components/APITable";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+## 인덱스{#search-index}
+
+```mdx-code-block
+<Tabs>
+<TabItem value="settings.index">
+```
+
+```json
+{
+  "number_of_shards": 1,
+  "number_of_replicas": 0,
+  "max_ngram_diff": 20
+}
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="settings.analysis.analyzer">
+```
+
+```json
+{
+  "analyzer": {
+    "korean_mixed_analyzer": {
+      "type": "custom",
+      "tokenizer": "decompound_mixed_tokenizer",
+      "filter": [
+        "lowercase",
+        "trim",
+        "nori_readingform",
+        "pos_filter_speech"
+      ]
+    },
+    "koran_search_analyzer": {
+      "type": "custom",
+      "tokenizer": "standard",
+      "filter": [
+        "lowercase",
+        "trim"
+      ]
+    },
+    "ngram_analyzer": {
+      "type": "custom",
+      "tokenizer": "ngram_tokenizer",
+      "filter": [
+        "lowercase",
+        "trim"
+      ]
+    },
+    "edge_ngram_analyzer": {
+      "type": "custom",
+      "tokenizer": "edge_ngram_tokenizer",
+      "filter": [
+        "lowercase",
+        "trim",
+        "edge_ngram_filter_front"
+      ]
+    },
+    "ngram_search_analyzer": {
+      "type": "custom",
+      "tokenizer": "ngram_tokenizer",
+      "filter": [
+        "lowercase",
+        "trim"
+      ]
+    }
+  }
+}
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="settings.analysis.tokenizer">
+```
+
+```json
+{
+  "tokenizer": {
+    "decompound_mixed_tokenizer": {
+      "type": "nori_tokenizer",
+      "decompound_mode": "mixed",
+      "discard_punctuation": "false"
+    },
+    "ngram_tokenizer": {
+      "type": "ngram",
+      "min_gram": "1",
+      "max_gram": "20",
+      "token_chars": [
+        "letter",
+        "digit",
+        "punctuation",
+        "symbol"
+      ]
+    },
+    "edge_ngram_tokenizer": {
+      "type": "edge_ngram",
+      "min_gram": "1",
+      "max_gram": "20",
+      "token_chars": [
+        "letter",
+        "digit",
+        "punctuation",
+        "symbol"
+      ]
+    }
+  }
+}
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="settings.analysis.filter">
+```
+
+```json
+{
+  "filter": {
+    "pos_filter_speech": {
+      "type": "nori_part_of_speech",
+      "stoptags": [
+        "E",
+        "IC",
+        "J",
+        "MAG",
+        "MAJ",
+        "MM",
+        "NA",
+        "NR",
+        "SC",
+        "SE",
+        "SF",
+        "SH",
+        "SL",
+        "SN",
+        "SP",
+        "SSC",
+        "SSO",
+        "SY",
+        "UNA",
+        "UNKNOWN",
+        "VA",
+        "VCN",
+        "VCP",
+        "VSV",
+        "VV",
+        "VX",
+        "XPN",
+        "XR",
+        "XSA",
+        "XSN",
+        "XSV"
+      ]
+    },
+    "edge_ngram_filter_front": {
+      "type": "edge_ngram",
+      "min_gram": "1",
+      "max_gram": "20",
+      "side": "front"
+    }
+  }
+}
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+## 매핑 정보
+
+```json title="news-properties.json"
+{
+  "properties": {
+    "id": {
+      "type": "keyword",
+      "index": false
+    },
+    "title": {
+      "type": "text",
+      "fields": {
+        "korean": {
+          "type": "text",
+          "analyzer": "korean_mixed_analyzer",
+          "search_analyzer": "koran_search_analyzer"
+        },
+        "ngram": {
+          "type": "text",
+          "analyzer": "ngram_analyzer",
+          "search_analyzer": "ngram_search_analyzer"
+        },
+        "edge_ngram": {
+          "type": "text",
+          "analyzer": "edge_ngram_analyzer",
+          "search_analyzer": "ngram_search_analyzer"
+        }
+      }
+    },
+    "content": {
+      "type": "text",
+      "fields": {
+        "korean": {
+          "type": "text",
+          "analyzer": "korean_mixed_analyzer",
+          "search_analyzer": "koran_search_analyzer"
+        },
+        "ngram": {
+          "type": "text",
+          "analyzer": "ngram_analyzer",
+          "search_analyzer": "ngram_search_analyzer"
+        },
+        "edge_ngram": {
+          "type": "text",
+          "analyzer": "edge_ngram_analyzer",
+          "search_analyzer": "ngram_search_analyzer"
+        }
+      }
+    },
+    "provider": {
+      "type": "nested",
+      "properties": {
+        "name": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "location": {
+          "type": "keyword"
+        }
+      }
+    },
+    "category": {
+      "type": "nested",
+      "properties": {
+        "major": {
+          "type": "keyword"
+        },
+        "minor": {
+          "type": "keyword"
+        }
+      }
+    },
+    "reporter": {
+      "type": "text"
+    },
+    "date": {
+      "type": "date",
+      "format": "strict_date_optional_time"
+    }
+  }
+}
+```
+
+
+## 검색 쿼리 {#search-query}
+```json title="search-query.json"
+{
+  "_source": ["title", "content", "provider", "date"],
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "nested": {
+            "path": "category",
+            "query": {
+              "bool": {
+                "must": [
+                  { "term": { "category.major": "사회" } },
+                  { "term": { "category.minor": "노동_복지" } }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "nested": {
+            "path": "provider",
+            "query": {
+              "bool": {
+                "must": [
+                  { "term": { "provider.type": "경제/IT" } }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "range": {
+            "date": {
+              "format": "yyyy-MM-dd",
+              "gte": "2021-01-01",
+              "lte": "2021-09-30"
+            }
+          }
+        }
+      ],
+      "should": [
+        { "prefix": { "title.korean": { "value": "대구", "boost": 15 } } },
+        { "term": { "title.ngram": { "value": "대구", "boost": 10 } } },
+        { "term": { "title.edge_ngram": { "value": "대구", "boost": 8 } } },
+        { "prefix": { "content.korean": { "value": "대구", "boost": 13 } } },
+        { "term": { "content.ngram": { "value": "대구", "boost": 6 } } },
+        { "term": { "content.edge_ngram": { "value": "대구", "boost": 4 } } }
+      ],
+      "minimum_should_match": 1
+    }
+  },
+  "sort": [{
+    "_score": "desc"
+  }],
+  "highlight": {
+    "fields": {
+      "title": {
+        "pre_tags": ["<strong>"], "post_tags": ["</strong>"]
+      }
+    }
+  }
+}
+```
+
