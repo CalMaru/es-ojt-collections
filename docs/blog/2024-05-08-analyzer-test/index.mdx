@@ -1,0 +1,2549 @@
+---
+slug: analyzer-test
+title: Analyzer Test
+authors: [cal]
+tags: [elasticsearch, analyzer]
+---
+
+import APITable from "@site/src/components/APITable";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+## 1. NGram, EdgeNgram 차이 {#test-one}
+
+### NGram {#test-one-ngram}
+- 음절 단위로 토큰을 생성하기 때문에 재현율은 높으나 정확도가 떨어짐
+- 첫 음절을 기준으로 `max_gram`에서 지정한 길이만큼 토큰 생성
+
+
+### EdgeNgram {#test-one-edge-ngram}
+- 지정한 토크나이저의 특성에 따라 NGram이 일어남 (front, back)
+
+### 실험 - 인덱스 설정 {#test-one-index}
+```json title="ngram_analyzer_test.json"
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "max_ngram_diff": 50
+    },
+    "analysis": {
+      "analyzer": {
+          "ngram_analyzer": {
+            "type": "custom",
+            "tokenizer": "ngram_tokenizer",
+            "filter": [
+              "lowercase",
+              "trim"
+            ]
+          },
+          "ngram_edge_analyzer": {
+              "type": "custom",
+            "tokenizer": "edge_ngram_tokenizer",
+            "filter": [
+              "lowercase",
+              "trim",
+              "edge_ngram_filter_front"
+            ]
+          }
+      },
+      "tokenizer": {
+        "ngram_tokenizer": {
+          "type": "ngram",
+          "min_gram": "1",
+          "max_gram": "50",
+          "token_chars": [
+            "letter",
+            "digit",
+            "punctuation",
+            "symbol"
+          ]
+        },
+        "edge_ngram_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": "1",
+          "max_gram": "50",
+          "token_chars": [
+            "letter",
+            "digit",
+            "punctuation",
+            "symbol"
+          ]
+        }
+      },
+      "filter": {
+        "edge_ngram_filter_front": {
+          "type": "edge_ngram",
+          "min_gram": "1",
+          "max_gram": "50",
+          "side": "front"
+        }
+      }
+    }
+  }
+}
+```
+
+### 실험 결과 - analyze {#test-one-test-result}
+
+**질의어**: 아버지가 방에 들어가신다
+
+```mdx-code-block
+<Tabs>
+<TabItem value="Ngram">
+```
+
+```json
+{
+  "tokens" : [
+    {
+      "token" : "아",
+      "start_offset" : 0,
+      "end_offset" : 1,
+      "type" : "word",
+      "position" : 0
+    },
+    {
+      "token" : "아버",
+      "start_offset" : 0,
+      "end_offset" : 2,
+      "type" : "word",
+      "position" : 1
+    },
+    {
+      "token" : "아버지",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "word",
+      "position" : 2
+    },
+    {
+      "token" : "아버지가",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 3
+    },
+    {
+      "token" : "버",
+      "start_offset" : 1,
+      "end_offset" : 2,
+      "type" : "word",
+      "position" : 4
+    },
+    {
+      "token" : "버지",
+      "start_offset" : 1,
+      "end_offset" : 3,
+      "type" : "word",
+      "position" : 5
+    },
+    {
+      "token" : "버지가",
+      "start_offset" : 1,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 6
+    },
+    {
+      "token" : "지",
+      "start_offset" : 2,
+      "end_offset" : 3,
+      "type" : "word",
+      "position" : 7
+    },
+    {
+      "token" : "지가",
+      "start_offset" : 2,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 8
+    },
+    {
+      "token" : "가",
+      "start_offset" : 3,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 9
+    },
+    {
+      "token" : "방",
+      "start_offset" : 5,
+      "end_offset" : 6,
+      "type" : "word",
+      "position" : 10
+    },
+    {
+      "token" : "방에",
+      "start_offset" : 5,
+      "end_offset" : 7,
+      "type" : "word",
+      "position" : 11
+    },
+    {
+      "token" : "에",
+      "start_offset" : 6,
+      "end_offset" : 7,
+      "type" : "word",
+      "position" : 12
+    },
+    {
+      "token" : "들",
+      "start_offset" : 8,
+      "end_offset" : 9,
+      "type" : "word",
+      "position" : 13
+    },
+    {
+      "token" : "들어",
+      "start_offset" : 8,
+      "end_offset" : 10,
+      "type" : "word",
+      "position" : 14
+    },
+    {
+      "token" : "들어가",
+      "start_offset" : 8,
+      "end_offset" : 11,
+      "type" : "word",
+      "position" : 15
+    },
+    {
+      "token" : "들어가신",
+      "start_offset" : 8,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 16
+    },
+    {
+      "token" : "들어가신다",
+      "start_offset" : 8,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 17
+    },
+    {
+      "token" : "어",
+      "start_offset" : 9,
+      "end_offset" : 10,
+      "type" : "word",
+      "position" : 18
+    },
+    {
+      "token" : "어가",
+      "start_offset" : 9,
+      "end_offset" : 11,
+      "type" : "word",
+      "position" : 19
+    },
+    {
+      "token" : "어가신",
+      "start_offset" : 9,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 20
+    },
+    {
+      "token" : "어가신다",
+      "start_offset" : 9,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 21
+    },
+    {
+      "token" : "가",
+      "start_offset" : 10,
+      "end_offset" : 11,
+      "type" : "word",
+      "position" : 22
+    },
+    {
+      "token" : "가신",
+      "start_offset" : 10,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 23
+    },
+    {
+      "token" : "가신다",
+      "start_offset" : 10,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 24
+    },
+    {
+      "token" : "신",
+      "start_offset" : 11,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 25
+    },
+    {
+      "token" : "신다",
+      "start_offset" : 11,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 26
+    },
+    {
+      "token" : "다",
+      "start_offset" : 12,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 27
+    }
+  ]
+}
+
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="EdgeNGram">
+```
+
+```json
+{
+  "tokens" : [
+    {
+      "token" : "아",
+      "start_offset" : 0,
+      "end_offset" : 1,
+      "type" : "word",
+      "position" : 0
+    },
+    {
+      "token" : "아",
+      "start_offset" : 0,
+      "end_offset" : 2,
+      "type" : "word",
+      "position" : 1
+    },
+    {
+      "token" : "아버",
+      "start_offset" : 0,
+      "end_offset" : 2,
+      "type" : "word",
+      "position" : 1
+    },
+    {
+      "token" : "아",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "word",
+      "position" : 2
+    },
+    {
+      "token" : "아버",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "word",
+      "position" : 2
+    },
+    {
+      "token" : "아버지",
+      "start_offset" : 0,
+      "end_offset" : 3,
+      "type" : "word",
+      "position" : 2
+    },
+    {
+      "token" : "아",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 3
+    },
+    {
+      "token" : "아버",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 3
+    },
+    {
+      "token" : "아버지",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 3
+    },
+    {
+      "token" : "아버지가",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 3
+    },
+    {
+      "token" : "방",
+      "start_offset" : 5,
+      "end_offset" : 6,
+      "type" : "word",
+      "position" : 4
+    },
+    {
+      "token" : "방",
+      "start_offset" : 5,
+      "end_offset" : 7,
+      "type" : "word",
+      "position" : 5
+    },
+    {
+      "token" : "방에",
+      "start_offset" : 5,
+      "end_offset" : 7,
+      "type" : "word",
+      "position" : 5
+    },
+    {
+      "token" : "들",
+      "start_offset" : 8,
+      "end_offset" : 9,
+      "type" : "word",
+      "position" : 6
+    },
+    {
+      "token" : "들",
+      "start_offset" : 8,
+      "end_offset" : 10,
+      "type" : "word",
+      "position" : 7
+    },
+    {
+      "token" : "들어",
+      "start_offset" : 8,
+      "end_offset" : 10,
+      "type" : "word",
+      "position" : 7
+    },
+    {
+      "token" : "들",
+      "start_offset" : 8,
+      "end_offset" : 11,
+      "type" : "word",
+      "position" : 8
+    },
+    {
+      "token" : "들어",
+      "start_offset" : 8,
+      "end_offset" : 11,
+      "type" : "word",
+      "position" : 8
+    },
+    {
+      "token" : "들어가",
+      "start_offset" : 8,
+      "end_offset" : 11,
+      "type" : "word",
+      "position" : 8
+    },
+    {
+      "token" : "들",
+      "start_offset" : 8,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 9
+    },
+    {
+      "token" : "들어",
+      "start_offset" : 8,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 9
+    },
+    {
+      "token" : "들어가",
+      "start_offset" : 8,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 9
+    },
+    {
+      "token" : "들어가신",
+      "start_offset" : 8,
+      "end_offset" : 12,
+      "type" : "word",
+      "position" : 9
+    },
+    {
+      "token" : "들",
+      "start_offset" : 8,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 10
+    },
+    {
+      "token" : "들어",
+      "start_offset" : 8,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 10
+    },
+    {
+      "token" : "들어가",
+      "start_offset" : 8,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 10
+    },
+    {
+      "token" : "들어가신",
+      "start_offset" : 8,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 10
+    },
+    {
+      "token" : "들어가신다",
+      "start_offset" : 8,
+      "end_offset" : 13,
+      "type" : "word",
+      "position" : 10
+    }
+  ]
+}
+
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+## 2. Nori 사용 시 mixed, discard 차이 {#test-two}
+
+토크나이저가 복합 명사를 처리하게 하는 `decompound mode` 옵션에서 `mixed`와 `discard`가 어떻게 다르게 동작하는지 알아본다.
+
+### mixed {#test-two-mixed}
+
+복합명사로 분리하고 원본 데이터는 삭제
+
+### discard {#test-two-discard}
+
+복합명사로 분리하고 원본 데이터는 유지
+
+
+### 실험 - 인덱스 설정 {#test-two-index}
+
+```json title="decompound_analyzer_test.json"
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "max_ngram_diff": 50
+    },
+    "analysis": {
+      "analyzer": {
+        "korean_mixed_analyzer": {
+          "type": "custom",
+          "tokenizer": "decompound_mixed_tokenizer",
+          "filter": [
+            "lowercase",
+            "trim",
+            "nori_readingform",
+            "pos_filter_speech"
+          ]
+        },
+        "korean_discard_analyzer": {
+          "type": "custom",
+          "tokenizer": "decompound_discard_tokenizer",
+          "filter": [
+            "lowercase",
+            "trim",
+            "nori_readingform",
+            "pos_filter_speech"
+          ]
+        }
+      },
+      "tokenizer": {
+        "decompound_mixed_tokenizer": {
+          "type": "nori_tokenizer",
+          "decompound_mode": "mixed",
+          "discard_punctuation": "false"
+        },
+        "decompound_discard_tokenizer": {
+          "type": "nori_tokenizer",
+          "decompound_mode": "discard",
+          "discard_punctuation": "false"
+        }
+      },
+      "filter": {
+        "pos_filter_speech": {
+          "type": "nori_part_of_speech",
+          "stoptags": [
+            "E",
+            "IC",
+            "J",
+            "MAG",
+            "MAJ",
+            "MM",
+            "NA",
+            "SC",
+            "SE",
+            "SF",
+            "SH",
+            "SL",
+            "SP",
+            "SSC",
+            "SSO",
+            "SY",
+            "UNA",
+            "UNKNOWN",
+            "VA",
+            "VCN",
+            "VCP",
+            "VSV",
+            "XPN",
+            "XR",
+            "XSA",
+            "XSN",
+            "XSV"
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+### 실험 결과 - analyze {#test-two-test-result}
+
+질의어는 다음과 같다.
+
+```text
+[헤럴드경제(안산)=박정규 기자]안산시(시장 윤화섭) 생활임금위원회는 2022년 생활임금을 시급 1만500원으로 의결했다고 9일 밝혔다. \n \n 올해 적용된 생활임금 시급 1만 원에 비해 5%(500원) 인상됐다. 정부가 제시한 2022년 법정 최저임금 시급보다 1340원 많다. 주 40시간 근무 기준 월 단위로 환산하면 유급주휴수당 포함 시 219만4500원으로 전년대비 10만4500원이 인상된다. \n \n 이번에 의결된 생활임금은 내년 1월부터 안산시와 출자출연기관 및 민간위탁사업(자체 재원 운영사업 제외) 수행기관 종사자 800여 명에게 적용된다. 공공근로, 지역공동체사업 등 국·도비 또는 시비 지원에 의해 일시적으로 채용된 노동자와 생활임금 이상을 받고 있는 노동자 등에게는 적용되지 않는다. \n \n \n \n\n \n fob140@heraldcorp.com
+```
+
+```mdx-code-block
+<Tabs>
+<TabItem value="Mixed">
+```
+
+```json
+{
+  "tokens" : [
+    {
+      "token" : "헤럴드",
+      "start_offset" : 1,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 1
+    },
+    {
+      "token" : "경제",
+      "start_offset" : 4,
+      "end_offset" : 6,
+      "type" : "word",
+      "position" : 2
+    },
+    {
+      "token" : "안산",
+      "start_offset" : 7,
+      "end_offset" : 9,
+      "type" : "word",
+      "position" : 4
+    },
+    {
+      "token" : "박정규",
+      "start_offset" : 11,
+      "end_offset" : 14,
+      "type" : "word",
+      "position" : 7
+    },
+    {
+      "token" : "기자",
+      "start_offset" : 15,
+      "end_offset" : 17,
+      "type" : "word",
+      "position" : 9
+    },
+    {
+      "token" : "안산시",
+      "start_offset" : 18,
+      "end_offset" : 21,
+      "type" : "word",
+      "position" : 11,
+      "positionLength" : 2
+    },
+    {
+      "token" : "안산",
+      "start_offset" : 18,
+      "end_offset" : 20,
+      "type" : "word",
+      "position" : 11
+    },
+    {
+      "token" : "시",
+      "start_offset" : 20,
+      "end_offset" : 21,
+      "type" : "word",
+      "position" : 12
+    },
+    {
+      "token" : "시장",
+      "start_offset" : 22,
+      "end_offset" : 24,
+      "type" : "word",
+      "position" : 14
+    },
+    {
+      "token" : "윤화섭",
+      "start_offset" : 25,
+      "end_offset" : 28,
+      "type" : "word",
+      "position" : 16
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 30,
+      "end_offset" : 32,
+      "type" : "word",
+      "position" : 19
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 32,
+      "end_offset" : 34,
+      "type" : "word",
+      "position" : 20
+    },
+    {
+      "token" : "위원회",
+      "start_offset" : 34,
+      "end_offset" : 37,
+      "type" : "word",
+      "position" : 21,
+      "positionLength" : 2
+    },
+    {
+      "token" : "위원",
+      "start_offset" : 34,
+      "end_offset" : 36,
+      "type" : "word",
+      "position" : 21
+    },
+    {
+      "token" : "회",
+      "start_offset" : 36,
+      "end_offset" : 37,
+      "type" : "word",
+      "position" : 22
+    },
+    {
+      "token" : "2022",
+      "start_offset" : 39,
+      "end_offset" : 43,
+      "type" : "word",
+      "position" : 25
+    },
+    {
+      "token" : "년",
+      "start_offset" : 43,
+      "end_offset" : 44,
+      "type" : "word",
+      "position" : 26
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 45,
+      "end_offset" : 47,
+      "type" : "word",
+      "position" : 28
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 47,
+      "end_offset" : 49,
+      "type" : "word",
+      "position" : 29
+    },
+    {
+      "token" : "시급",
+      "start_offset" : 51,
+      "end_offset" : 53,
+      "type" : "word",
+      "position" : 32
+    },
+    {
+      "token" : "1",
+      "start_offset" : 54,
+      "end_offset" : 55,
+      "type" : "word",
+      "position" : 34
+    },
+    {
+      "token" : "만",
+      "start_offset" : 55,
+      "end_offset" : 56,
+      "type" : "word",
+      "position" : 35
+    },
+    {
+      "token" : "500",
+      "start_offset" : 56,
+      "end_offset" : 59,
+      "type" : "word",
+      "position" : 36
+    },
+    {
+      "token" : "원",
+      "start_offset" : 59,
+      "end_offset" : 60,
+      "type" : "word",
+      "position" : 37
+    },
+    {
+      "token" : "의결",
+      "start_offset" : 63,
+      "end_offset" : 65,
+      "type" : "word",
+      "position" : 40
+    },
+    {
+      "token" : "9",
+      "start_offset" : 69,
+      "end_offset" : 70,
+      "type" : "word",
+      "position" : 45
+    },
+    {
+      "token" : "일",
+      "start_offset" : 70,
+      "end_offset" : 71,
+      "type" : "word",
+      "position" : 46
+    },
+    {
+      "token" : "밝혔",
+      "start_offset" : 72,
+      "end_offset" : 74,
+      "type" : "word",
+      "position" : 48,
+      "positionLength" : 2
+    },
+    {
+      "token" : "밝히",
+      "start_offset" : 72,
+      "end_offset" : 74,
+      "type" : "word",
+      "position" : 48
+    },
+    {
+      "token" : "올해",
+      "start_offset" : 81,
+      "end_offset" : 83,
+      "type" : "word",
+      "position" : 54,
+      "positionLength" : 2
+    },
+    {
+      "token" : "올",
+      "start_offset" : 81,
+      "end_offset" : 82,
+      "type" : "word",
+      "position" : 54
+    },
+    {
+      "token" : "해",
+      "start_offset" : 82,
+      "end_offset" : 83,
+      "type" : "word",
+      "position" : 55
+    },
+    {
+      "token" : "적용",
+      "start_offset" : 84,
+      "end_offset" : 86,
+      "type" : "word",
+      "position" : 57
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 88,
+      "end_offset" : 90,
+      "type" : "word",
+      "position" : 61
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 90,
+      "end_offset" : 92,
+      "type" : "word",
+      "position" : 62
+    },
+    {
+      "token" : "시급",
+      "start_offset" : 93,
+      "end_offset" : 95,
+      "type" : "word",
+      "position" : 64
+    },
+    {
+      "token" : "1",
+      "start_offset" : 96,
+      "end_offset" : 97,
+      "type" : "word",
+      "position" : 66
+    },
+    {
+      "token" : "만",
+      "start_offset" : 97,
+      "end_offset" : 98,
+      "type" : "word",
+      "position" : 67
+    },
+    {
+      "token" : "원",
+      "start_offset" : 99,
+      "end_offset" : 100,
+      "type" : "word",
+      "position" : 69
+    },
+    {
+      "token" : "비해",
+      "start_offset" : 102,
+      "end_offset" : 104,
+      "type" : "word",
+      "position" : 72,
+      "positionLength" : 2
+    },
+    {
+      "token" : "비하",
+      "start_offset" : 102,
+      "end_offset" : 104,
+      "type" : "word",
+      "position" : 72
+    },
+    {
+      "token" : "5",
+      "start_offset" : 105,
+      "end_offset" : 106,
+      "type" : "word",
+      "position" : 75
+    },
+    {
+      "token" : "500",
+      "start_offset" : 108,
+      "end_offset" : 111,
+      "type" : "word",
+      "position" : 77
+    },
+    {
+      "token" : "원",
+      "start_offset" : 111,
+      "end_offset" : 112,
+      "type" : "word",
+      "position" : 78
+    },
+    {
+      "token" : "인상",
+      "start_offset" : 114,
+      "end_offset" : 116,
+      "type" : "word",
+      "position" : 81
+    },
+    {
+      "token" : "정부",
+      "start_offset" : 120,
+      "end_offset" : 122,
+      "type" : "word",
+      "position" : 87
+    },
+    {
+      "token" : "제시",
+      "start_offset" : 124,
+      "end_offset" : 126,
+      "type" : "word",
+      "position" : 90
+    },
+    {
+      "token" : "2022",
+      "start_offset" : 128,
+      "end_offset" : 132,
+      "type" : "word",
+      "position" : 94
+    },
+    {
+      "token" : "년",
+      "start_offset" : 132,
+      "end_offset" : 133,
+      "type" : "word",
+      "position" : 95
+    },
+    {
+      "token" : "법정",
+      "start_offset" : 134,
+      "end_offset" : 136,
+      "type" : "word",
+      "position" : 97
+    },
+    {
+      "token" : "최저",
+      "start_offset" : 137,
+      "end_offset" : 139,
+      "type" : "word",
+      "position" : 99
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 139,
+      "end_offset" : 141,
+      "type" : "word",
+      "position" : 100
+    },
+    {
+      "token" : "시급",
+      "start_offset" : 142,
+      "end_offset" : 144,
+      "type" : "word",
+      "position" : 102
+    },
+    {
+      "token" : "1340",
+      "start_offset" : 147,
+      "end_offset" : 151,
+      "type" : "word",
+      "position" : 105
+    },
+    {
+      "token" : "원",
+      "start_offset" : 151,
+      "end_offset" : 152,
+      "type" : "word",
+      "position" : 106
+    },
+    {
+      "token" : "주",
+      "start_offset" : 157,
+      "end_offset" : 158,
+      "type" : "word",
+      "position" : 112
+    },
+    {
+      "token" : "40",
+      "start_offset" : 159,
+      "end_offset" : 161,
+      "type" : "word",
+      "position" : 114
+    },
+    {
+      "token" : "시간",
+      "start_offset" : 161,
+      "end_offset" : 163,
+      "type" : "word",
+      "position" : 115
+    },
+    {
+      "token" : "근무",
+      "start_offset" : 164,
+      "end_offset" : 166,
+      "type" : "word",
+      "position" : 117
+    },
+    {
+      "token" : "기준",
+      "start_offset" : 167,
+      "end_offset" : 169,
+      "type" : "word",
+      "position" : 119
+    },
+    {
+      "token" : "월",
+      "start_offset" : 170,
+      "end_offset" : 171,
+      "type" : "word",
+      "position" : 121
+    },
+    {
+      "token" : "단위",
+      "start_offset" : 172,
+      "end_offset" : 174,
+      "type" : "word",
+      "position" : 123
+    },
+    {
+      "token" : "환산",
+      "start_offset" : 176,
+      "end_offset" : 178,
+      "type" : "word",
+      "position" : 126
+    },
+    {
+      "token" : "유급",
+      "start_offset" : 181,
+      "end_offset" : 183,
+      "type" : "word",
+      "position" : 130
+    },
+    {
+      "token" : "주휴",
+      "start_offset" : 183,
+      "end_offset" : 185,
+      "type" : "word",
+      "position" : 131
+    },
+    {
+      "token" : "수당",
+      "start_offset" : 185,
+      "end_offset" : 187,
+      "type" : "word",
+      "position" : 132
+    },
+    {
+      "token" : "포함",
+      "start_offset" : 188,
+      "end_offset" : 190,
+      "type" : "word",
+      "position" : 134
+    },
+    {
+      "token" : "시",
+      "start_offset" : 191,
+      "end_offset" : 192,
+      "type" : "word",
+      "position" : 136
+    },
+    {
+      "token" : "219",
+      "start_offset" : 193,
+      "end_offset" : 196,
+      "type" : "word",
+      "position" : 138
+    },
+    {
+      "token" : "만",
+      "start_offset" : 196,
+      "end_offset" : 197,
+      "type" : "word",
+      "position" : 139
+    },
+    {
+      "token" : "4500",
+      "start_offset" : 197,
+      "end_offset" : 201,
+      "type" : "word",
+      "position" : 140
+    },
+    {
+      "token" : "원",
+      "start_offset" : 201,
+      "end_offset" : 202,
+      "type" : "word",
+      "position" : 141
+    },
+    {
+      "token" : "전년",
+      "start_offset" : 205,
+      "end_offset" : 207,
+      "type" : "word",
+      "position" : 144
+    },
+    {
+      "token" : "대비",
+      "start_offset" : 207,
+      "end_offset" : 209,
+      "type" : "word",
+      "position" : 145
+    },
+    {
+      "token" : "10",
+      "start_offset" : 210,
+      "end_offset" : 212,
+      "type" : "word",
+      "position" : 147
+    },
+    {
+      "token" : "만",
+      "start_offset" : 212,
+      "end_offset" : 213,
+      "type" : "word",
+      "position" : 148
+    },
+    {
+      "token" : "4500",
+      "start_offset" : 213,
+      "end_offset" : 217,
+      "type" : "word",
+      "position" : 149
+    },
+    {
+      "token" : "원",
+      "start_offset" : 217,
+      "end_offset" : 218,
+      "type" : "word",
+      "position" : 150
+    },
+    {
+      "token" : "인상",
+      "start_offset" : 220,
+      "end_offset" : 222,
+      "type" : "word",
+      "position" : 153
+    },
+    {
+      "token" : "이번",
+      "start_offset" : 230,
+      "end_offset" : 232,
+      "type" : "word",
+      "position" : 159,
+      "positionLength" : 2
+    },
+    {
+      "token" : "이",
+      "start_offset" : 230,
+      "end_offset" : 231,
+      "type" : "word",
+      "position" : 159
+    },
+    {
+      "token" : "번",
+      "start_offset" : 231,
+      "end_offset" : 232,
+      "type" : "word",
+      "position" : 160
+    },
+    {
+      "token" : "의결",
+      "start_offset" : 234,
+      "end_offset" : 236,
+      "type" : "word",
+      "position" : 163
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 238,
+      "end_offset" : 240,
+      "type" : "word",
+      "position" : 167
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 240,
+      "end_offset" : 242,
+      "type" : "word",
+      "position" : 168
+    },
+    {
+      "token" : "내년",
+      "start_offset" : 244,
+      "end_offset" : 246,
+      "type" : "word",
+      "position" : 171
+    },
+    {
+      "token" : "1",
+      "start_offset" : 247,
+      "end_offset" : 248,
+      "type" : "word",
+      "position" : 173
+    },
+    {
+      "token" : "월",
+      "start_offset" : 248,
+      "end_offset" : 249,
+      "type" : "word",
+      "position" : 174
+    },
+    {
+      "token" : "안산시",
+      "start_offset" : 252,
+      "end_offset" : 255,
+      "type" : "word",
+      "position" : 177,
+      "positionLength" : 2
+    },
+    {
+      "token" : "안산",
+      "start_offset" : 252,
+      "end_offset" : 254,
+      "type" : "word",
+      "position" : 177
+    },
+    {
+      "token" : "시",
+      "start_offset" : 254,
+      "end_offset" : 255,
+      "type" : "word",
+      "position" : 178
+    },
+    {
+      "token" : "출자",
+      "start_offset" : 257,
+      "end_offset" : 259,
+      "type" : "word",
+      "position" : 181
+    },
+    {
+      "token" : "출연",
+      "start_offset" : 259,
+      "end_offset" : 261,
+      "type" : "word",
+      "position" : 182
+    },
+    {
+      "token" : "기관",
+      "start_offset" : 261,
+      "end_offset" : 263,
+      "type" : "word",
+      "position" : 183
+    },
+    {
+      "token" : "민간",
+      "start_offset" : 266,
+      "end_offset" : 268,
+      "type" : "word",
+      "position" : 187
+    },
+    {
+      "token" : "위탁",
+      "start_offset" : 268,
+      "end_offset" : 270,
+      "type" : "word",
+      "position" : 188
+    },
+    {
+      "token" : "사업",
+      "start_offset" : 270,
+      "end_offset" : 272,
+      "type" : "word",
+      "position" : 189
+    },
+    {
+      "token" : "자체",
+      "start_offset" : 273,
+      "end_offset" : 275,
+      "type" : "word",
+      "position" : 191
+    },
+    {
+      "token" : "재원",
+      "start_offset" : 276,
+      "end_offset" : 278,
+      "type" : "word",
+      "position" : 193
+    },
+    {
+      "token" : "운영",
+      "start_offset" : 279,
+      "end_offset" : 281,
+      "type" : "word",
+      "position" : 195
+    },
+    {
+      "token" : "사업",
+      "start_offset" : 281,
+      "end_offset" : 283,
+      "type" : "word",
+      "position" : 196
+    },
+    {
+      "token" : "제외",
+      "start_offset" : 284,
+      "end_offset" : 286,
+      "type" : "word",
+      "position" : 198
+    },
+    {
+      "token" : "수행",
+      "start_offset" : 288,
+      "end_offset" : 290,
+      "type" : "word",
+      "position" : 201
+    },
+    {
+      "token" : "기관",
+      "start_offset" : 290,
+      "end_offset" : 292,
+      "type" : "word",
+      "position" : 202
+    },
+    {
+      "token" : "종사자",
+      "start_offset" : 293,
+      "end_offset" : 296,
+      "type" : "word",
+      "position" : 204,
+      "positionLength" : 2
+    },
+    {
+      "token" : "종사",
+      "start_offset" : 293,
+      "end_offset" : 295,
+      "type" : "word",
+      "position" : 204
+    },
+    {
+      "token" : "자",
+      "start_offset" : 295,
+      "end_offset" : 296,
+      "type" : "word",
+      "position" : 205
+    },
+    {
+      "token" : "800",
+      "start_offset" : 297,
+      "end_offset" : 300,
+      "type" : "word",
+      "position" : 207
+    },
+    {
+      "token" : "명",
+      "start_offset" : 302,
+      "end_offset" : 303,
+      "type" : "word",
+      "position" : 210
+    },
+    {
+      "token" : "적용",
+      "start_offset" : 306,
+      "end_offset" : 308,
+      "type" : "word",
+      "position" : 213
+    },
+    {
+      "token" : "공공",
+      "start_offset" : 312,
+      "end_offset" : 314,
+      "type" : "word",
+      "position" : 218
+    },
+    {
+      "token" : "근로",
+      "start_offset" : 314,
+      "end_offset" : 316,
+      "type" : "word",
+      "position" : 219
+    },
+    {
+      "token" : "지역",
+      "start_offset" : 318,
+      "end_offset" : 320,
+      "type" : "word",
+      "position" : 222
+    },
+    {
+      "token" : "공동체",
+      "start_offset" : 320,
+      "end_offset" : 323,
+      "type" : "word",
+      "position" : 223,
+      "positionLength" : 2
+    },
+    {
+      "token" : "공동",
+      "start_offset" : 320,
+      "end_offset" : 322,
+      "type" : "word",
+      "position" : 223
+    },
+    {
+      "token" : "체",
+      "start_offset" : 322,
+      "end_offset" : 323,
+      "type" : "word",
+      "position" : 224
+    },
+    {
+      "token" : "사업",
+      "start_offset" : 323,
+      "end_offset" : 325,
+      "type" : "word",
+      "position" : 225
+    },
+    {
+      "token" : "등",
+      "start_offset" : 326,
+      "end_offset" : 327,
+      "type" : "word",
+      "position" : 227
+    },
+    {
+      "token" : "국",
+      "start_offset" : 328,
+      "end_offset" : 329,
+      "type" : "word",
+      "position" : 229
+    },
+    {
+      "token" : "도비",
+      "start_offset" : 330,
+      "end_offset" : 332,
+      "type" : "word",
+      "position" : 231
+    },
+    {
+      "token" : "시비",
+      "start_offset" : 336,
+      "end_offset" : 338,
+      "type" : "word",
+      "position" : 235
+    },
+    {
+      "token" : "지원",
+      "start_offset" : 339,
+      "end_offset" : 341,
+      "type" : "word",
+      "position" : 237
+    },
+    {
+      "token" : "의해",
+      "start_offset" : 343,
+      "end_offset" : 345,
+      "type" : "word",
+      "position" : 240,
+      "positionLength" : 2
+    },
+    {
+      "token" : "의하",
+      "start_offset" : 343,
+      "end_offset" : 345,
+      "type" : "word",
+      "position" : 240
+    },
+    {
+      "token" : "일시",
+      "start_offset" : 346,
+      "end_offset" : 348,
+      "type" : "word",
+      "position" : 243
+    },
+    {
+      "token" : "채용",
+      "start_offset" : 352,
+      "end_offset" : 354,
+      "type" : "word",
+      "position" : 247
+    },
+    {
+      "token" : "노동자",
+      "start_offset" : 356,
+      "end_offset" : 359,
+      "type" : "word",
+      "position" : 251,
+      "positionLength" : 2
+    },
+    {
+      "token" : "노동",
+      "start_offset" : 356,
+      "end_offset" : 358,
+      "type" : "word",
+      "position" : 251
+    },
+    {
+      "token" : "자",
+      "start_offset" : 358,
+      "end_offset" : 359,
+      "type" : "word",
+      "position" : 252
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 361,
+      "end_offset" : 363,
+      "type" : "word",
+      "position" : 255
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 363,
+      "end_offset" : 365,
+      "type" : "word",
+      "position" : 256
+    },
+    {
+      "token" : "이상",
+      "start_offset" : 366,
+      "end_offset" : 368,
+      "type" : "word",
+      "position" : 258
+    },
+    {
+      "token" : "받",
+      "start_offset" : 370,
+      "end_offset" : 371,
+      "type" : "word",
+      "position" : 261
+    },
+    {
+      "token" : "있",
+      "start_offset" : 373,
+      "end_offset" : 374,
+      "type" : "word",
+      "position" : 264
+    },
+    {
+      "token" : "노동자",
+      "start_offset" : 376,
+      "end_offset" : 379,
+      "type" : "word",
+      "position" : 267,
+      "positionLength" : 2
+    },
+    {
+      "token" : "노동",
+      "start_offset" : 376,
+      "end_offset" : 378,
+      "type" : "word",
+      "position" : 267
+    },
+    {
+      "token" : "자",
+      "start_offset" : 378,
+      "end_offset" : 379,
+      "type" : "word",
+      "position" : 268
+    },
+    {
+      "token" : "등",
+      "start_offset" : 380,
+      "end_offset" : 381,
+      "type" : "word",
+      "position" : 270
+    },
+    {
+      "token" : "적용",
+      "start_offset" : 385,
+      "end_offset" : 387,
+      "type" : "word",
+      "position" : 274
+    },
+    {
+      "token" : "않",
+      "start_offset" : 390,
+      "end_offset" : 391,
+      "type" : "word",
+      "position" : 278
+    },
+    {
+      "token" : "140",
+      "start_offset" : 409,
+      "end_offset" : 412,
+      "type" : "word",
+      "position" : 284
+    }
+  ]
+}
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="Discard">
+```
+
+```json
+{
+  "tokens" : [
+    {
+      "token" : "헤럴드",
+      "start_offset" : 1,
+      "end_offset" : 4,
+      "type" : "word",
+      "position" : 1
+    },
+    {
+      "token" : "경제",
+      "start_offset" : 4,
+      "end_offset" : 6,
+      "type" : "word",
+      "position" : 2
+    },
+    {
+      "token" : "안산",
+      "start_offset" : 7,
+      "end_offset" : 9,
+      "type" : "word",
+      "position" : 4
+    },
+    {
+      "token" : "박정규",
+      "start_offset" : 11,
+      "end_offset" : 14,
+      "type" : "word",
+      "position" : 7
+    },
+    {
+      "token" : "기자",
+      "start_offset" : 15,
+      "end_offset" : 17,
+      "type" : "word",
+      "position" : 9
+    },
+    {
+      "token" : "안산",
+      "start_offset" : 18,
+      "end_offset" : 20,
+      "type" : "word",
+      "position" : 11
+    },
+    {
+      "token" : "시",
+      "start_offset" : 20,
+      "end_offset" : 21,
+      "type" : "word",
+      "position" : 12
+    },
+    {
+      "token" : "시장",
+      "start_offset" : 22,
+      "end_offset" : 24,
+      "type" : "word",
+      "position" : 14
+    },
+    {
+      "token" : "윤화섭",
+      "start_offset" : 25,
+      "end_offset" : 28,
+      "type" : "word",
+      "position" : 16
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 30,
+      "end_offset" : 32,
+      "type" : "word",
+      "position" : 19
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 32,
+      "end_offset" : 34,
+      "type" : "word",
+      "position" : 20
+    },
+    {
+      "token" : "위원",
+      "start_offset" : 34,
+      "end_offset" : 36,
+      "type" : "word",
+      "position" : 21
+    },
+    {
+      "token" : "회",
+      "start_offset" : 36,
+      "end_offset" : 37,
+      "type" : "word",
+      "position" : 22
+    },
+    {
+      "token" : "2022",
+      "start_offset" : 39,
+      "end_offset" : 43,
+      "type" : "word",
+      "position" : 25
+    },
+    {
+      "token" : "년",
+      "start_offset" : 43,
+      "end_offset" : 44,
+      "type" : "word",
+      "position" : 26
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 45,
+      "end_offset" : 47,
+      "type" : "word",
+      "position" : 28
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 47,
+      "end_offset" : 49,
+      "type" : "word",
+      "position" : 29
+    },
+    {
+      "token" : "시급",
+      "start_offset" : 51,
+      "end_offset" : 53,
+      "type" : "word",
+      "position" : 32
+    },
+    {
+      "token" : "1",
+      "start_offset" : 54,
+      "end_offset" : 55,
+      "type" : "word",
+      "position" : 34
+    },
+    {
+      "token" : "만",
+      "start_offset" : 55,
+      "end_offset" : 56,
+      "type" : "word",
+      "position" : 35
+    },
+    {
+      "token" : "500",
+      "start_offset" : 56,
+      "end_offset" : 59,
+      "type" : "word",
+      "position" : 36
+    },
+    {
+      "token" : "원",
+      "start_offset" : 59,
+      "end_offset" : 60,
+      "type" : "word",
+      "position" : 37
+    },
+    {
+      "token" : "의결",
+      "start_offset" : 63,
+      "end_offset" : 65,
+      "type" : "word",
+      "position" : 40
+    },
+    {
+      "token" : "9",
+      "start_offset" : 69,
+      "end_offset" : 70,
+      "type" : "word",
+      "position" : 45
+    },
+    {
+      "token" : "일",
+      "start_offset" : 70,
+      "end_offset" : 71,
+      "type" : "word",
+      "position" : 46
+    },
+    {
+      "token" : "밝히",
+      "start_offset" : 72,
+      "end_offset" : 74,
+      "type" : "word",
+      "position" : 48
+    },
+    {
+      "token" : "올",
+      "start_offset" : 81,
+      "end_offset" : 82,
+      "type" : "word",
+      "position" : 54
+    },
+    {
+      "token" : "해",
+      "start_offset" : 82,
+      "end_offset" : 83,
+      "type" : "word",
+      "position" : 55
+    },
+    {
+      "token" : "적용",
+      "start_offset" : 84,
+      "end_offset" : 86,
+      "type" : "word",
+      "position" : 57
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 88,
+      "end_offset" : 90,
+      "type" : "word",
+      "position" : 61
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 90,
+      "end_offset" : 92,
+      "type" : "word",
+      "position" : 62
+    },
+    {
+      "token" : "시급",
+      "start_offset" : 93,
+      "end_offset" : 95,
+      "type" : "word",
+      "position" : 64
+    },
+    {
+      "token" : "1",
+      "start_offset" : 96,
+      "end_offset" : 97,
+      "type" : "word",
+      "position" : 66
+    },
+    {
+      "token" : "만",
+      "start_offset" : 97,
+      "end_offset" : 98,
+      "type" : "word",
+      "position" : 67
+    },
+    {
+      "token" : "원",
+      "start_offset" : 99,
+      "end_offset" : 100,
+      "type" : "word",
+      "position" : 69
+    },
+    {
+      "token" : "비하",
+      "start_offset" : 102,
+      "end_offset" : 104,
+      "type" : "word",
+      "position" : 72
+    },
+    {
+      "token" : "5",
+      "start_offset" : 105,
+      "end_offset" : 106,
+      "type" : "word",
+      "position" : 75
+    },
+    {
+      "token" : "500",
+      "start_offset" : 108,
+      "end_offset" : 111,
+      "type" : "word",
+      "position" : 77
+    },
+    {
+      "token" : "원",
+      "start_offset" : 111,
+      "end_offset" : 112,
+      "type" : "word",
+      "position" : 78
+    },
+    {
+      "token" : "인상",
+      "start_offset" : 114,
+      "end_offset" : 116,
+      "type" : "word",
+      "position" : 81
+    },
+    {
+      "token" : "정부",
+      "start_offset" : 120,
+      "end_offset" : 122,
+      "type" : "word",
+      "position" : 87
+    },
+    {
+      "token" : "제시",
+      "start_offset" : 124,
+      "end_offset" : 126,
+      "type" : "word",
+      "position" : 90
+    },
+    {
+      "token" : "2022",
+      "start_offset" : 128,
+      "end_offset" : 132,
+      "type" : "word",
+      "position" : 94
+    },
+    {
+      "token" : "년",
+      "start_offset" : 132,
+      "end_offset" : 133,
+      "type" : "word",
+      "position" : 95
+    },
+    {
+      "token" : "법정",
+      "start_offset" : 134,
+      "end_offset" : 136,
+      "type" : "word",
+      "position" : 97
+    },
+    {
+      "token" : "최저",
+      "start_offset" : 137,
+      "end_offset" : 139,
+      "type" : "word",
+      "position" : 99
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 139,
+      "end_offset" : 141,
+      "type" : "word",
+      "position" : 100
+    },
+    {
+      "token" : "시급",
+      "start_offset" : 142,
+      "end_offset" : 144,
+      "type" : "word",
+      "position" : 102
+    },
+    {
+      "token" : "1340",
+      "start_offset" : 147,
+      "end_offset" : 151,
+      "type" : "word",
+      "position" : 105
+    },
+    {
+      "token" : "원",
+      "start_offset" : 151,
+      "end_offset" : 152,
+      "type" : "word",
+      "position" : 106
+    },
+    {
+      "token" : "주",
+      "start_offset" : 157,
+      "end_offset" : 158,
+      "type" : "word",
+      "position" : 112
+    },
+    {
+      "token" : "40",
+      "start_offset" : 159,
+      "end_offset" : 161,
+      "type" : "word",
+      "position" : 114
+    },
+    {
+      "token" : "시간",
+      "start_offset" : 161,
+      "end_offset" : 163,
+      "type" : "word",
+      "position" : 115
+    },
+    {
+      "token" : "근무",
+      "start_offset" : 164,
+      "end_offset" : 166,
+      "type" : "word",
+      "position" : 117
+    },
+    {
+      "token" : "기준",
+      "start_offset" : 167,
+      "end_offset" : 169,
+      "type" : "word",
+      "position" : 119
+    },
+    {
+      "token" : "월",
+      "start_offset" : 170,
+      "end_offset" : 171,
+      "type" : "word",
+      "position" : 121
+    },
+    {
+      "token" : "단위",
+      "start_offset" : 172,
+      "end_offset" : 174,
+      "type" : "word",
+      "position" : 123
+    },
+    {
+      "token" : "환산",
+      "start_offset" : 176,
+      "end_offset" : 178,
+      "type" : "word",
+      "position" : 126
+    },
+    {
+      "token" : "유급",
+      "start_offset" : 181,
+      "end_offset" : 183,
+      "type" : "word",
+      "position" : 130
+    },
+    {
+      "token" : "주휴",
+      "start_offset" : 183,
+      "end_offset" : 185,
+      "type" : "word",
+      "position" : 131
+    },
+    {
+      "token" : "수당",
+      "start_offset" : 185,
+      "end_offset" : 187,
+      "type" : "word",
+      "position" : 132
+    },
+    {
+      "token" : "포함",
+      "start_offset" : 188,
+      "end_offset" : 190,
+      "type" : "word",
+      "position" : 134
+    },
+    {
+      "token" : "시",
+      "start_offset" : 191,
+      "end_offset" : 192,
+      "type" : "word",
+      "position" : 136
+    },
+    {
+      "token" : "219",
+      "start_offset" : 193,
+      "end_offset" : 196,
+      "type" : "word",
+      "position" : 138
+    },
+    {
+      "token" : "만",
+      "start_offset" : 196,
+      "end_offset" : 197,
+      "type" : "word",
+      "position" : 139
+    },
+    {
+      "token" : "4500",
+      "start_offset" : 197,
+      "end_offset" : 201,
+      "type" : "word",
+      "position" : 140
+    },
+    {
+      "token" : "원",
+      "start_offset" : 201,
+      "end_offset" : 202,
+      "type" : "word",
+      "position" : 141
+    },
+    {
+      "token" : "전년",
+      "start_offset" : 205,
+      "end_offset" : 207,
+      "type" : "word",
+      "position" : 144
+    },
+    {
+      "token" : "대비",
+      "start_offset" : 207,
+      "end_offset" : 209,
+      "type" : "word",
+      "position" : 145
+    },
+    {
+      "token" : "10",
+      "start_offset" : 210,
+      "end_offset" : 212,
+      "type" : "word",
+      "position" : 147
+    },
+    {
+      "token" : "만",
+      "start_offset" : 212,
+      "end_offset" : 213,
+      "type" : "word",
+      "position" : 148
+    },
+    {
+      "token" : "4500",
+      "start_offset" : 213,
+      "end_offset" : 217,
+      "type" : "word",
+      "position" : 149
+    },
+    {
+      "token" : "원",
+      "start_offset" : 217,
+      "end_offset" : 218,
+      "type" : "word",
+      "position" : 150
+    },
+    {
+      "token" : "인상",
+      "start_offset" : 220,
+      "end_offset" : 222,
+      "type" : "word",
+      "position" : 153
+    },
+    {
+      "token" : "이",
+      "start_offset" : 230,
+      "end_offset" : 231,
+      "type" : "word",
+      "position" : 159
+    },
+    {
+      "token" : "번",
+      "start_offset" : 231,
+      "end_offset" : 232,
+      "type" : "word",
+      "position" : 160
+    },
+    {
+      "token" : "의결",
+      "start_offset" : 234,
+      "end_offset" : 236,
+      "type" : "word",
+      "position" : 163
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 238,
+      "end_offset" : 240,
+      "type" : "word",
+      "position" : 167
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 240,
+      "end_offset" : 242,
+      "type" : "word",
+      "position" : 168
+    },
+    {
+      "token" : "내년",
+      "start_offset" : 244,
+      "end_offset" : 246,
+      "type" : "word",
+      "position" : 171
+    },
+    {
+      "token" : "1",
+      "start_offset" : 247,
+      "end_offset" : 248,
+      "type" : "word",
+      "position" : 173
+    },
+    {
+      "token" : "월",
+      "start_offset" : 248,
+      "end_offset" : 249,
+      "type" : "word",
+      "position" : 174
+    },
+    {
+      "token" : "안산",
+      "start_offset" : 252,
+      "end_offset" : 254,
+      "type" : "word",
+      "position" : 177
+    },
+    {
+      "token" : "시",
+      "start_offset" : 254,
+      "end_offset" : 255,
+      "type" : "word",
+      "position" : 178
+    },
+    {
+      "token" : "출자",
+      "start_offset" : 257,
+      "end_offset" : 259,
+      "type" : "word",
+      "position" : 181
+    },
+    {
+      "token" : "출연",
+      "start_offset" : 259,
+      "end_offset" : 261,
+      "type" : "word",
+      "position" : 182
+    },
+    {
+      "token" : "기관",
+      "start_offset" : 261,
+      "end_offset" : 263,
+      "type" : "word",
+      "position" : 183
+    },
+    {
+      "token" : "민간",
+      "start_offset" : 266,
+      "end_offset" : 268,
+      "type" : "word",
+      "position" : 187
+    },
+    {
+      "token" : "위탁",
+      "start_offset" : 268,
+      "end_offset" : 270,
+      "type" : "word",
+      "position" : 188
+    },
+    {
+      "token" : "사업",
+      "start_offset" : 270,
+      "end_offset" : 272,
+      "type" : "word",
+      "position" : 189
+    },
+    {
+      "token" : "자체",
+      "start_offset" : 273,
+      "end_offset" : 275,
+      "type" : "word",
+      "position" : 191
+    },
+    {
+      "token" : "재원",
+      "start_offset" : 276,
+      "end_offset" : 278,
+      "type" : "word",
+      "position" : 193
+    },
+    {
+      "token" : "운영",
+      "start_offset" : 279,
+      "end_offset" : 281,
+      "type" : "word",
+      "position" : 195
+    },
+    {
+      "token" : "사업",
+      "start_offset" : 281,
+      "end_offset" : 283,
+      "type" : "word",
+      "position" : 196
+    },
+    {
+      "token" : "제외",
+      "start_offset" : 284,
+      "end_offset" : 286,
+      "type" : "word",
+      "position" : 198
+    },
+    {
+      "token" : "수행",
+      "start_offset" : 288,
+      "end_offset" : 290,
+      "type" : "word",
+      "position" : 201
+    },
+    {
+      "token" : "기관",
+      "start_offset" : 290,
+      "end_offset" : 292,
+      "type" : "word",
+      "position" : 202
+    },
+    {
+      "token" : "종사",
+      "start_offset" : 293,
+      "end_offset" : 295,
+      "type" : "word",
+      "position" : 204
+    },
+    {
+      "token" : "자",
+      "start_offset" : 295,
+      "end_offset" : 296,
+      "type" : "word",
+      "position" : 205
+    },
+    {
+      "token" : "800",
+      "start_offset" : 297,
+      "end_offset" : 300,
+      "type" : "word",
+      "position" : 207
+    },
+    {
+      "token" : "명",
+      "start_offset" : 302,
+      "end_offset" : 303,
+      "type" : "word",
+      "position" : 210
+    },
+    {
+      "token" : "적용",
+      "start_offset" : 306,
+      "end_offset" : 308,
+      "type" : "word",
+      "position" : 213
+    },
+    {
+      "token" : "공공",
+      "start_offset" : 312,
+      "end_offset" : 314,
+      "type" : "word",
+      "position" : 218
+    },
+    {
+      "token" : "근로",
+      "start_offset" : 314,
+      "end_offset" : 316,
+      "type" : "word",
+      "position" : 219
+    },
+    {
+      "token" : "지역",
+      "start_offset" : 318,
+      "end_offset" : 320,
+      "type" : "word",
+      "position" : 222
+    },
+    {
+      "token" : "공동",
+      "start_offset" : 320,
+      "end_offset" : 322,
+      "type" : "word",
+      "position" : 223
+    },
+    {
+      "token" : "체",
+      "start_offset" : 322,
+      "end_offset" : 323,
+      "type" : "word",
+      "position" : 224
+    },
+    {
+      "token" : "사업",
+      "start_offset" : 323,
+      "end_offset" : 325,
+      "type" : "word",
+      "position" : 225
+    },
+    {
+      "token" : "등",
+      "start_offset" : 326,
+      "end_offset" : 327,
+      "type" : "word",
+      "position" : 227
+    },
+    {
+      "token" : "국",
+      "start_offset" : 328,
+      "end_offset" : 329,
+      "type" : "word",
+      "position" : 229
+    },
+    {
+      "token" : "도비",
+      "start_offset" : 330,
+      "end_offset" : 332,
+      "type" : "word",
+      "position" : 231
+    },
+    {
+      "token" : "시비",
+      "start_offset" : 336,
+      "end_offset" : 338,
+      "type" : "word",
+      "position" : 235
+    },
+    {
+      "token" : "지원",
+      "start_offset" : 339,
+      "end_offset" : 341,
+      "type" : "word",
+      "position" : 237
+    },
+    {
+      "token" : "의하",
+      "start_offset" : 343,
+      "end_offset" : 345,
+      "type" : "word",
+      "position" : 240
+    },
+    {
+      "token" : "일시",
+      "start_offset" : 346,
+      "end_offset" : 348,
+      "type" : "word",
+      "position" : 243
+    },
+    {
+      "token" : "채용",
+      "start_offset" : 352,
+      "end_offset" : 354,
+      "type" : "word",
+      "position" : 247
+    },
+    {
+      "token" : "노동",
+      "start_offset" : 356,
+      "end_offset" : 358,
+      "type" : "word",
+      "position" : 251
+    },
+    {
+      "token" : "자",
+      "start_offset" : 358,
+      "end_offset" : 359,
+      "type" : "word",
+      "position" : 252
+    },
+    {
+      "token" : "생활",
+      "start_offset" : 361,
+      "end_offset" : 363,
+      "type" : "word",
+      "position" : 255
+    },
+    {
+      "token" : "임금",
+      "start_offset" : 363,
+      "end_offset" : 365,
+      "type" : "word",
+      "position" : 256
+    },
+    {
+      "token" : "이상",
+      "start_offset" : 366,
+      "end_offset" : 368,
+      "type" : "word",
+      "position" : 258
+    },
+    {
+      "token" : "받",
+      "start_offset" : 370,
+      "end_offset" : 371,
+      "type" : "word",
+      "position" : 261
+    },
+    {
+      "token" : "있",
+      "start_offset" : 373,
+      "end_offset" : 374,
+      "type" : "word",
+      "position" : 264
+    },
+    {
+      "token" : "노동",
+      "start_offset" : 376,
+      "end_offset" : 378,
+      "type" : "word",
+      "position" : 267
+    },
+    {
+      "token" : "자",
+      "start_offset" : 378,
+      "end_offset" : 379,
+      "type" : "word",
+      "position" : 268
+    },
+    {
+      "token" : "등",
+      "start_offset" : 380,
+      "end_offset" : 381,
+      "type" : "word",
+      "position" : 270
+    },
+    {
+      "token" : "적용",
+      "start_offset" : 385,
+      "end_offset" : 387,
+      "type" : "word",
+      "position" : 274
+    },
+    {
+      "token" : "않",
+      "start_offset" : 390,
+      "end_offset" : 391,
+      "type" : "word",
+      "position" : 278
+    },
+    {
+      "token" : "140",
+      "start_offset" : 409,
+      "end_offset" : 412,
+      "type" : "word",
+      "position" : 284
+    }
+  ]
+}
+
+```
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
