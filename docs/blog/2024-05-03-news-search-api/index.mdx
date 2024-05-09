@@ -29,6 +29,8 @@ import TabItem from "@theme/TabItem";
 <TabItem value="settings.analysis.analyzer">
 ```
 
+수정 필요
+
 ```json
 {
   "analyzer": {
@@ -84,6 +86,8 @@ import TabItem from "@theme/TabItem";
 <TabItem value="settings.analysis.tokenizer">
 ```
 
+수정 필요
+
 ```json
 {
   "tokenizer": {
@@ -122,6 +126,8 @@ import TabItem from "@theme/TabItem";
 </TabItem>
 <TabItem value="settings.analysis.filter">
 ```
+
+수정 필요
 
 ```json
 {
@@ -178,6 +184,8 @@ import TabItem from "@theme/TabItem";
 ```
 
 ## 매핑 정보
+
+수정 필요
 
 ```json title="news-properties.json"
 {
@@ -265,56 +273,60 @@ import TabItem from "@theme/TabItem";
 
 ## 검색 쿼리 {#search-query}
 
-기자명 추가해야 함
-
 ```json title="search-query.json"
 {
   "_source": ["title", "content", "provider", "date"],
   "query": {
     "bool": {
-      "must": [
-        {
-          "nested": {
-            "path": "category",
-            "query": {
-              "bool": {
-                "must": [
-                  { "term": { "category.major": "사회" } },
-                  { "term": { "category.minor": "노동_복지" } }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "nested": {
-            "path": "provider",
-            "query": {
-              "bool": {
-                "must": [
-                  { "term": { "provider.type": "경제/IT" } }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "range": {
-            "date": {
-              "format": "yyyy-MM-dd",
-              "gte": "2021-01-01",
-              "lte": "2021-09-30"
+      "must": [{
+        "nested": {
+          "path": "category",
+          "query": {
+            "bool": {
+              "must": [
+                { "term": { "category.major": "사회" } },
+                { "term": { "category.minor": "노동_복지" } }
+              ]
             }
           }
         }
-      ],
+      }, {
+        "nested": {
+          "path": "provider",
+          "query": {
+            "bool": {
+              "must": [
+                { "term": { "provider.type": "경제/IT" } }
+              ]
+            }
+          }
+        }
+      }, {
+        "bool": {
+          "should": [{
+            "term": {
+              "reporter": "홍길동"
+            }
+          }, {
+            "term": {
+              "reporter": "해리포터"
+            }
+          }]
+        }
+      }, {
+        "range": {
+          "date": {
+            "format": "yyyy-MM-dd",
+            "gte": "2021-01-01",
+            "lte": "2021-09-30"
+          }
+        }
+      }],
       "should": [
-        { "prefix": { "title.korean": { "value": "대구", "boost": 15 } } },
-        { "term": { "title.ngram": { "value": "대구", "boost": 10 } } },
-        { "term": { "title.edge_ngram": { "value": "대구", "boost": 8 } } },
-        { "prefix": { "content.korean": { "value": "대구", "boost": 13 } } },
-        { "term": { "content.ngram": { "value": "대구", "boost": 6 } } },
-        { "term": { "content.edge_ngram": { "value": "대구", "boost": 4 } } }
+        { "prefix": { "title": { "value": "대구", "boost": 10 } } },
+        { "term": { "title.edge_ngram": { "value": "대구", "boost": 5 } } },
+        { "prefix": { "content": { "value": "대구", "boost": 7 } } },
+        { "term": { "content.edge_ngram": { "value": "대구", "boost": 2 } } },
       ],
       "minimum_should_match": 1
     }

@@ -5,11 +5,13 @@ authors: [cal]
 tags: [preprocessing, data]
 ---
 
-## Dictionary {#dictionary-preprocessing}
+## Keyword {#keyword-preprocessing}
 
-### 전처리를 위한 인덱스 {#dictionary-index}
-`PUT /dictionary-preprocessing`
-```json
+### 전처리를 위한 인덱스 {#keyword-preprocessing-index}
+
+`PUT /keyword-preprocessing`
+
+```json title="keyword_preprocessing_index.json"
 {
   "settings": {
     "index": {
@@ -75,6 +77,232 @@ tags: [preprocessing, data]
           ]
         }
       }
+    }
+  }
+}
+```
+
+### Keyword 인덱스 {#keyword-index}
+
+```json title="keyword_index.json"
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "max_ngram_diff": 50
+    },
+    "analysis": {
+      "analyzer": {
+        "jamo_ngram_analyzer": {
+          "type": "custom",
+          "tokenizer": "ngram_tokenizer",
+          "filter": [
+            "javacafe_jamo_filter",
+            "lowercase",
+            "trim"
+          ]
+        },
+        "jamo_edge_ngram_analyzer": {
+          "type": "custom",
+          "tokenizer": "edge_ngram_tokenizer",
+          "filter": [
+            "javacafe_jamo_filter",
+            "lowercase",
+            "trim",
+            "edge_ngram_filter_front"
+          ]
+        },
+        "jamo_edge_ngram_analyzer_back": {
+          "type": "custom",
+          "tokenizer": "edge_ngram_tokenizer",
+          "filter": [
+            "javacafe_jamo_filter",
+            "lowercase",
+            "trim",
+            "edge_ngram_filter_back"
+          ]
+        },
+        "jamo_ngram_search_analyzer": {
+          "type": "custom",
+          "tokenizer": "ngram_tokenizer",
+          "filter": [
+            "javacafe_jamo_filter",
+            "lowercase",
+            "trim"
+          ]
+        }
+      },
+      "tokenizer": {
+        "ngram_tokenizer": {
+          "type": "ngram",
+          "min_gram": "1",
+          "max_gram": "50",
+          "token_chars": [
+            "letter",
+            "digit",
+            "punctuation",
+            "symbol"
+          ]
+        },
+        "edge_ngram_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": "1",
+          "max_gram": "50",
+          "token_chars": [
+            "letter",
+            "digit",
+            "punctuation",
+            "symbol"
+          ]
+        }
+      },
+      "filter": {
+        "edge_ngram_filter_front": {
+          "type": "edge_ngram",
+          "min_gram": "1",
+          "max_gram": "50",
+          "side": "front"
+        },
+        "edge_ngram_filter_back": {
+          "type": "edge_ngram",
+          "min_gram": "1",
+          "max_gram": "50",
+          "side": "back"
+        },
+        "javacafe_jamo_filter": {
+          "type": "javacafe_jamo"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "item": {
+        "type": "keyword",
+        "fields": {
+          "jamo_ngram": {
+            "type": "text",
+            "analyzer": "jamo_ngram_analyzer",
+            "search_analyzer": "jamo_ngram_search_analyzer"
+          },
+          "jamo_edge_ngram": {
+            "type": "text",
+            "analyzer": "jamo_edge_ngram_analyzer",
+            "search_analyzer": "jamo_ngram_search_analyzer"
+          },
+          "jamo_edge_ngram_back": {
+            "type": "text",
+            "analyzer": "jamo_edge_ngram_analyzer_back",
+            "search_analyzer": "jamo_ngram_search_analyzer"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Keyword bulk {#keyword-bulk}
+
+```json title="keyword_bulk.json"
+{"item": "가가와"}
+{"index": {"_index": "keyword"}}
+{"item": "가가와현"}
+{"index": {"_index": "keyword"}}
+{"item": "가가호호"}
+{"index": {"_index": "keyword"}}
+{"item": "가각"}
+{"index": {"_index": "keyword"}}
+{"item": "가감"}
+{"index": {"_index": "keyword"}}
+{"item": "가갸"}
+{"index": {"_index": "keyword"}}
+{"item": "가거"}
+{"index": {"_index": "keyword"}}
+{"item": "가건물"}
+```
+
+### 검색어 자동 완성 쿼리 {#keyword-search-query}
+
+```json title="keyword_search_query.json"
+{
+  "query": {
+    "bool": {
+      "should": [{
+        "prefix": {
+          "item": {
+            "value": "키워드",
+            "boost": 30
+          }
+        }}, {
+        "term": {
+          "item.jamo_ngram": {
+            "value": "ㅋㅣㅇㅝㄷㅡ",
+            "boost": 3
+          }  
+        }}, {
+        "term": {
+          "item.jamo_edge_ngram": {
+            "value": "ㅋㅣㅇㅝㄷㅡ",
+            "boost": 2
+          }
+        }}, {
+        "term": {
+          "item.jamo_edge_ngram_back": {
+            "value": "ㅋㅣㅇㅝㄷㅡ",
+            "boost": 1
+          }
+        }}
+      ]
+    }
+  },
+  "sort": [{
+    "_score": "desc"
+  }]
+}
+```
+
+### 검색어 자동 완성을 위한 템플릿 {#keyword-serach-template}
+
+```json title="keyword_search_template.json"
+{
+  "script": {
+    "lang": "mustache",
+    "source": {
+      "query": {
+        "bool": {
+          "should": [{
+            "prefix": {
+              "item": {
+                "value": "{{query}}",
+                "boost": 30
+              }
+            }}, {
+            "term": {
+              "item.jamo_ngram": {
+                "value": "{{query_jamo}}",
+                "boost": 3
+              }  
+            }}, {
+            "term": {
+              "item.jamo_edge_ngram": {
+                "value": "{{query_jamo}}",
+                "boost": 2
+              }
+            }}, {
+            "term": {
+              "item.jamo_edge_ngram_back": {
+                "value": "{{query_jamo}}",
+                "boost": 1
+              }
+            }}
+          ]
+        }
+      },
+      "sort": [{
+        "_score": "desc"
+      }]
     }
   }
 }
