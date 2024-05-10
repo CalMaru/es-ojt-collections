@@ -187,7 +187,7 @@ import TabItem from "@theme/TabItem";
 
 수정 필요
 
-```json title="news-properties.json"
+```json title="news_properties.json"
 {
   "properties": {
     "id": {
@@ -273,7 +273,7 @@ import TabItem from "@theme/TabItem";
 
 ## 검색 쿼리 {#search-query}
 
-```json title="search-query.json"
+```json title="search_query.json"
 {
   "_source": ["title", "content", "provider", "date"],
   "query": {
@@ -326,7 +326,7 @@ import TabItem from "@theme/TabItem";
         { "prefix": { "title": { "value": "대구", "boost": 10 } } },
         { "term": { "title.edge_ngram": { "value": "대구", "boost": 5 } } },
         { "prefix": { "content": { "value": "대구", "boost": 7 } } },
-        { "term": { "content.edge_ngram": { "value": "대구", "boost": 2 } } },
+        { "term": { "content.edge_ngram": { "value": "대구", "boost": 2 } } }
       ],
       "minimum_should_match": 1
     }
@@ -343,4 +343,56 @@ import TabItem from "@theme/TabItem";
   }
 }
 ```
+
+## 검색 템플릿 {#search-template}
+
+보기용
+
+```json
+{
+  "script": {
+    "lang": "mustache",
+    "source": {
+      "_source": {{#toJson}}source{{/toJson}},
+      "query": {
+        "bool": {
+          "must": {{#toJson}}must{{/toJson}},
+          "should": [
+            { "prefix": { "title": { "value": "{{query}}", "boost": 10} } },
+            { "term": { "title.edge_ngram": { "value": "{{query}}", "boost": 5} } },
+            { "prefix": { "content": { "value": "{{query}}", "boost": 7} } },
+            { "term": { "content.edge_ngram": { "value": "{{query}}", "boost": 2} } }
+          ],
+          "minimum_should_match": 1
+        }
+      },
+      "sort": [{
+        "{{sort_key}}": "{{sort_value}}"
+      }]
+      {{#highlight}}
+      ,
+      "highlight": {
+        "fields": {
+          "title": {
+            "pre_tags": ["{{start_tag}}"], "post_tags": ["{{end_tag}}"]
+          }
+        }
+      }
+      {{/highlight}}
+    }
+  }
+}
+```
+
+진짜
+
+```json
+{
+  "script": {
+    "lang": "mustache",
+    "source": "{ \"size\": \"{{size}}\", \"pit\": { \"id\": \"{{pit_id}}\", \"keep_alive\": \"1m\" }, {{#page}} \"search_after\": {{#toJSON}}search_after{{/toJSON}}, {{/page}} \"_source\": {{#toJson}}source{{/toJson}},  \"query\": { \"bool\": { \"must\": {{#toJson}}must{{/toJson}}, \"should\": [ {  \"prefix\": { \"title\": { \"value\": \"{{query}}\", \"boost\": 10 } } }, { \"term\": { \"title.edge_ngram\": { \"value\":  \"{{query}}\",  \"boost\": 5 } } }, { \"prefix\": { \"content\": {  \"value\": \"{{query}}\", \"boost\": 7 } } }, { \"term\": { \"content.edge_ngram\": {  \"value\": \"{{query}}\",  \"boost\": 2 } } }], \"minimum_should_match\": 1 } }, \"sort\": [ { \"{{sort_key}}\": \"{{sort_value}}\" } ]  {{#highlight}} ,\"highlight\": { \"fields\": { \"title\": { \"pre_tags\": [ \"{{start_tag}}\" ], \"post_tags\": [ \"{{end_tag}}\" ] } }  }  {{/highlight}} }"
+  }
+}
+```
+
 
