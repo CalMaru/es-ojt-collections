@@ -275,6 +275,15 @@ import TabItem from "@theme/TabItem";
 
 ```json title="search_query.json"
 {
+  "size": 10,
+  "pit": {
+    "id": "dfksjdfksjdfksjfksj",
+    "keep_alive": "1m"
+  },
+  "search_after": [
+    130.424,
+    23
+  ],
   "_source": ["title", "content", "provider", "date"],
   "query": {
     "bool": {
@@ -353,6 +362,14 @@ import TabItem from "@theme/TabItem";
   "script": {
     "lang": "mustache",
     "source": {
+      "size": "{{size}}",
+      "pit": {
+        "id": "{{pit_id}}",
+        "keep_alive": "1m"
+      },
+      {{#page}}
+      "search_after": {{toJSON}}search_after{{/toJSON}}
+      {{/page}}
       "_source": {{#toJson}}source{{/toJson}},
       "query": {
         "bool": {
