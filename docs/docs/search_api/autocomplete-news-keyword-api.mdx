@@ -1,0 +1,76 @@
+---
+sidebar_position: 2
+slug: /search-api/@docusaurus/autocomplete-news-keyword
+---
+
+# Autocomplete News Keyword API
+
+import APITable from "@site/src/components/APITable";
+
+뉴스 키워드 자동 완성에 사용되는 API입니다.
+
+
+```mdx-code-block
+<APITable>
+```
+
+| 메서드 | URL     |
+| ------ | ------- |
+| GET    | /autocomplete/news-keyword |
+
+```mdx-code-block
+</APITable>
+```
+
+## 요청 {#request}
+
+### 쿼리 파라미터 {#query-parameters}
+
+```mdx-code-block
+<APITable>
+```
+
+| Field         | Type   | Description                                                             | Required |
+| ------------- | ------ | ------------------------------------------------------------------------------------------ | -------- |
+| query         | String | 검색어                                                                                          | O        |
+
+```mdx-code-block
+</APITable>
+```
+
+## 응답 {#response}
+
+```mdx-code-block
+<APITable>
+```
+
+| Field                 | Type                | Description                  |
+| --------------------- | ------------------- | ---------------------------- |
+| suggestions            | List (String)   | 뉴스 키워드 자동 완성 결과             |
+
+```mdx-code-block
+</APITable>
+```
+
+### 응답 예시 {#response-example}
+
+```json title="autocomplete_news_keyword.json"
+{
+  "suggestions": [
+    "각양각색",
+    "공중목욕탕",
+    "과학교육과",
+    "과학박물관",
+    "국학진흥원",
+    "고속터미널역",
+    "공학교육인증",
+    "과학기술정책",
+    "과학인용색인",
+    "국군체육부대"
+  ]
+}
+```
+
+### 에러 코드 {#error-status}
+
+[Status Code](../../status-code/@docusaurus/status-code)를 참조해주세요.
